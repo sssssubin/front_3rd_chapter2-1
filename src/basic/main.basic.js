@@ -13,7 +13,7 @@ let lastSelected = null,
   itemTotal = 0;
 
 // DOM 요소들을 위한 전역 변수
-let root, container, wrapper, title, cartDisplay, sumDisplay, productSelect, addButton, stockInfo;
+let root, container, wrapper, title, cartDisplay, sumDisplay, salePrice, productSelect, addButton, stockInfo;
 
 // 상수 정의
 const DISCOUNT_RATES = {
@@ -67,6 +67,9 @@ export function main() {
   sumDisplay = document.createElement('div');
   sumDisplay.id = 'cart-total';
   sumDisplay.className = 'text-xl font-bold my-4';
+  
+  salePrice = document.createElement('span');
+  salePrice.id = 'sale-rate';
 
   productSelect = document.createElement('select');
   productSelect.id = 'product-select';
@@ -82,7 +85,7 @@ export function main() {
   stockInfo.className = 'text-sm text-gray-500 mt-2';
 
   // DOM 구조 설정
-  wrapper.append(title, cartDisplay, sumDisplay, productSelect, addButton, stockInfo);
+  wrapper.append(title, cartDisplay, sumDisplay, salePrice, productSelect, addButton, stockInfo);
   container.appendChild(wrapper);
   root.appendChild(container);
 
@@ -182,16 +185,18 @@ function calculateCart(newDate) {
 
   if (dayOfWeek === 2) {
     // 2는 화요일을 나타냅니다
-    // console.log('요일 (0-6):', dayOfWeek === 2 && '화');
+    console.log('요일 (0-6):', dayOfWeek === 2 && '화');
 
     totalAmount *= 1 - TUESDAY_DISCOUNT_RATE;
     discountRate = Math.max(discountRate, TUESDAY_DISCOUNT_RATE);
+
+    salePrice.textContent = '(' + (discountRate * 100).toFixed(1) + '% 할인 적용)';
   }
 
   // 총액 표시 업데이트
   sumDisplay.textContent = '총액: ' + Math.round(totalAmount) + '원';
 
-  if (discountRate > 0 && quantity >= 10) {
+  if (discountRate > 0) {
     const span = document.createElement('span');
     span.className = 'text-green-500 ml-2';
     span.textContent = '(' + (discountRate * 100).toFixed(1) + '% 할인 적용)';
