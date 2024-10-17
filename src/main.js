@@ -205,7 +205,6 @@ addBtn.addEventListener("click", function () {
 })
 cartDisp.addEventListener("click", function (event) {
   var tgt = event.target
-
   if (tgt.classList.contains("quantity-change") || tgt.classList.contains("remove-item")) {
     var prodId = tgt.dataset.productId
     var itemElem = document.getElementById(prodId)

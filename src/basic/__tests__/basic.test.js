@@ -139,15 +139,15 @@ describe("basic test", () => {
       expect(p5InCart).toBe(true)
 
       // 수량 증가 버튼 찾기
-      const increaseBtn = cartDisp.querySelector('#p5 .quantity-change[data-change="1"]')
-      expect(increaseBtn).not.toBeNull()
-
       // 수량을 10번 증가시키기
       for (let i = 0; i < 10; i++) {
+        const increaseBtn = cartDisp.querySelector('#p5 .quantity-change[data-change="1"]')
+        expect(increaseBtn).not.toBeNull()
         increaseBtn.click()
       }
 
       // 11번째 클릭 시 재고 부족 알림이 표시되어야 함
+      const increaseBtn = cartDisp.querySelector('#p5 .quantity-change[data-change="1"]')
       increaseBtn.click()
 
       // 재고 부족 알림이 표시되었는지 확인
