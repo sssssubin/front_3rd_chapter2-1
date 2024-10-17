@@ -129,7 +129,7 @@ describe('basic test', () => {
         for (let i=0; i < 10; i++) {
           addBtn.click();
         }
-        expect(sum.textContent).toContain('(10.0% 할인 적용)');
+        expect(sum.textContent).toContain('총액: 108000원(10.0% 할인 적용)(포인트: 108)');
       });
 
       it('포인트가 올바르게 계산되는지 확인', () => {
