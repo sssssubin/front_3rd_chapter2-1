@@ -3,6 +3,33 @@
  * 상품 목록 표시, 장바구니 추가/제거, 할인 적용, 포인트 계산, 로컬 스토리지 활용 등의 기능을 포함
  */
 
+// 상수 정의
+const DISCOUNT_RATES = {
+  p1: 0.1,
+  p2: 0.15,
+  p3: 0.2,
+  p4: 0.05,
+  p5: 0.25,
+};
+
+const BULK_DISCOUNT_THRESHOLD = 30;
+const BULK_DISCOUNT_RATE = 0.25;
+const TUESDAY_DISCOUNT_RATE = 0.1;
+const DUBBLE_DISCOUNT_RATE = 0.95;
+const POINT_RATE = 1000;
+const STOCK_WARNING_THRESHOLD = 5;
+const LIGHTNING_SALE_PROBABILITY = 0.3;
+const LIGHTNING_SALE_DISCOUNT = 0.8;
+
+// 상품 목록
+const PRODUCT_LIST = [
+  { id: 'p1', name: '상품1', val: 10000, q: 50 },
+  { id: 'p2', name: '상품2', val: 20000, q: 30 },
+  { id: 'p3', name: '상품3', val: 30000, q: 20 },
+  { id: 'p4', name: '상품4', val: 15000, q: 0 },
+  { id: 'p5', name: '상품5', val: 25000, q: 10 },
+];
+
 // 전역 변수 선언
 let selectedProductId = null,
   loyaltyPoints = 0,
@@ -21,30 +48,6 @@ let rootElement,
   productDropdown,
   addToCartButton,
   stockStatusDisplay;
-
-// 상수 정의
-const DISCOUNT_RATES = {
-  p1: 0.1,
-  p2: 0.15,
-  p3: 0.2,
-  p4: 0.05,
-  p5: 0.25,
-};
-
-const BULK_DISCOUNT_THRESHOLD = 30;
-const BULK_DISCOUNT_RATE = 0.25;
-const TUESDAY_DISCOUNT_RATE = 0.1;
-const DUBBLE_DISCOUNT_RATE = 0.95;
-const POINT_RATE = 1000;
-
-// 상품 목록
-const PRODUCT_LIST = [
-  { id: 'p1', name: '상품1', val: 10000, q: 50 },
-  { id: 'p2', name: '상품2', val: 20000, q: 30 },
-  { id: 'p3', name: '상품3', val: 30000, q: 20 },
-  { id: 'p4', name: '상품4', val: 15000, q: 0 },
-  { id: 'p5', name: '상품5', val: 25000, q: 10 },
-];
 
 /**
  * 초기 설정 및 이벤트 설정
@@ -240,7 +243,7 @@ function updateCartTotalDisplay() {
 function updateStockInfo() {
   let infoMsg = '';
   PRODUCT_LIST.forEach(function (item) {
-    if (item.q < 5) {
+    if (item.q < STOCK_WARNING_THRESHOLD) {
       infoMsg += `${item.name}: ${item.q > 0 ? `재고 부족 (${item.q}개 남음)` : '품절'}\n`;
     }
   });
@@ -462,8 +465,8 @@ function setupDiscountEvents() {
   setTimeout(function () {
     setInterval(function () {
       const luckyItem = PRODUCT_LIST[Math.floor(Math.random() * PRODUCT_LIST.length)];
-      if (Math.random() < 0.3 && luckyItem.q > 0) {
-        luckyItem.val = Math.round(luckyItem.val * 0.8);
+      if (Math.random() < LIGHTNING_SALE_PROBABILITY && luckyItem.q > 0) {
+        luckyItem.val = Math.round(luckyItem.val * LIGHTNING_SALE_DISCOUNT);
         alert('번개세일! ' + luckyItem.name + '이(가) 20% 할인 중입니다!');
         updateSelectOptions();
       }
