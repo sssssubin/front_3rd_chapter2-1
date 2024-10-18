@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from "vite
 describe("advanced test", () => {
   describe.each([
     { type: "origin", loadFile: () => import("../../main.js") },
-    { type: "advanced", loadFile: () => import("../main.advanced.ts") },
+    { type: "advanced", loadFile: () => import("../main.advanced.tsx") },
   ])("$type 장바구니 시나리오 테스트", ({ loadFile }) => {
     let sel, addBtn, cartDisp, sum, stockInfo
 

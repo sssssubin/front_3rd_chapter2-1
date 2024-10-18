@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from "react"
+import ReactDOM from "react-dom/client"
+
 // @NOTE: 파일을 분리하면 좋은데 변경과정을 한눈에 파악하기 용이하게 한 파일에 작성했습니다.
 
 // types.ts
@@ -84,7 +87,7 @@ function setState(newState: Partial<typeof state>) {
   // console.group("")
   // console.log("prev state", state)
   state = { ...state, ...newState }
-  console.log("next state", state)
+  // console.log("next state", state)
   // console.groupEnd()
   render(state)
 }
@@ -181,73 +184,9 @@ function removeItemFromCart(state: AppState, productId: ProductId) {
 // ---------------------------------------
 // UI Layer
 
-function render(state: AppState) {
-  const { totalAmount, discountRate, bonusPoint } = useCartSummary(state)
-
-  const displayTotalAmount = Math.round(totalAmount)
-  const displayDiscRate = (discountRate * 100).toFixed(1)
-
-  // 목록 출력
-  const sel = $("#product-select") as HTMLSelectElement
-  const v = sel.value
-  sel.innerHTML = state.productList
-    .map(
-      (item) =>
-        `<option value="${item.id}" ${item.stock === 0 ? "disabled" : ""}>${item.name} - ${item.price}원</option>`,
-    )
-    .join("")
-  if (v) sel.value = v
-
-  // 카트 총액
-  $("#cart-total").innerHTML =
-    `총액: ${displayTotalAmount}원` +
-    `${discountRate > 0 ? `<span class="text-green-500 ml-2">(${displayDiscRate}% 할인 적용)</span>` : ""}` +
-    `<span id="loyalty-points" class="text-blue-500 ml-2">(포인트: ${bonusPoint})</span>`
-
-  // 재고 출력
-  $("#stock-status").textContent = state.productList
-    .map((item) =>
-      item.stock < 5 ? `${item.name}: ${item.stock > 0 ? `재고 부족 (${item.stock}개 남음)` : "품절"}` : "",
-    )
-    .join("")
-
-  $("#cart-items").innerHTML = state.cart
-    .map(
-      (cartItem) => `
-<div id="${cartItem.id}" class="flex justify-between items-center mb-2">
-    <span>${cartItem.name} - ${cartItem.price}원 x ${cartItem.quantity}</span>
-  <div>
-    <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${cartItem.id}" data-change="-1">-</button>
-    <button class="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1" data-product-id="${cartItem.id}" data-change="1">+</button>
-    <button class="remove-item bg-red-500 text-white px-2 py-1 rounded" data-product-id="${cartItem.id}">삭제</button>
-  </div>
-</div>`,
-    )
-    .join("")
-}
+function render(state: AppState) {}
 
 function main(root: HTMLElement) {
-  // View
-  root.innerHTML = `
-    <div class="bg-gray-100 p-8">
-      <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8">
-        <h1 id="title" class="text-2xl font-bold mb-4">장바구니</h1>
-        <div id="cart-items"></div>
-        <div id="cart-total" class="text-xl font-bold my-4"></div>
-        <select id="product-select" class="border rounded p-2 mr-2"></select>
-        <button id="add-to-cart" class="bg-blue-500 text-white px-4 py-2 rounded">추가</button>
-        <div id="stock-status" class="text-sm text-gray-500 mt-2"></div>
-      </div>
-    </div>
-  `
-
-  // 행동 - 장바구니에 상품 추가
-  $("#add-to-cart").addEventListener("click", handleAddProductToCart)
-
-  // 행동 - 장바구니 수량 변경
-  $("#cart-items").addEventListener("click", handleChangeQty)
-  $("#cart-items").addEventListener("click", handleRemoveItemFromCart)
-
   useEffectSaleFlash()
   useEffectSaleRecommend()
 
@@ -287,61 +226,190 @@ function useEffectSaleRecommend() {
   }, Math.random() * 20000)
 }
 
-function handleAddProductToCart() {
-  const sel = $("#product-select") as HTMLSelectElement
-  const selItem = sel.value
-  lastSelectedProductIdRef = selItem
+// React App
+function App() {
+  const [state, setState] = useState({
+    // Sample State
+    productList: [
+      {
+        id: "p1",
+        name: "상품1",
+        price: 10000,
+        stock: 50,
+        discount: 0.1,
+      },
+      {
+        id: "p2",
+        name: "상품2",
+        price: 20000,
+        stock: 29,
+        discount: 0.15,
+      },
+      {
+        id: "p3",
+        name: "상품3",
+        price: 30000,
+        stock: 14,
+        discount: 0.2,
+      },
+      {
+        id: "p4",
+        name: "상품4",
+        price: 15000,
+        stock: 0,
+        discount: 0.05,
+      },
+      {
+        id: "p5",
+        name: "상품5",
+        price: 25000,
+        stock: 8,
+        discount: 0.25,
+      },
+    ],
 
-  const product = state.productList.find((p) => p.id === selItem)
+    cart: [
+      {
+        id: "p2",
+        name: "상품2",
+        price: 20000,
+        stock: 30,
+        discount: 0.15,
+        quantity: 1,
+      },
+      {
+        id: "p3",
+        name: "상품3",
+        price: 30000,
+        stock: 20,
+        discount: 0.2,
+        quantity: 6,
+      },
+      {
+        id: "p5",
+        name: "상품5",
+        price: 25000,
+        stock: 10,
+        discount: 0.25,
+        quantity: 2,
+      },
+    ],
+  })
 
-  // 재고확인
-  if (!product || product.stock <= 0) {
-    alert("재고가 부족합니다.")
-    return
+  const cart = state.cart
+  const productList = state.productList
+
+  const { totalAmount, discountRate, bonusPoint } = useCartSummary(state)
+
+  const displayTotalAmount = Math.round(totalAmount)
+  const displayDiscRate = (discountRate * 100).toFixed(1)
+
+  function handleAddProductToCart() {
+    const sel = $("#product-select") as HTMLSelectElement
+    const selItem = sel.value
+    lastSelectedProductIdRef = selItem
+
+    const product = state.productList.find((p) => p.id === selItem)
+
+    // 재고확인
+    if (!product || product.stock <= 0) {
+      alert("재고가 부족합니다.")
+      return
+    }
+
+    addToCart(state, product)
   }
 
-  addToCart(state, product)
+  function handleChangeQty(cartItem: CartItem, quantityOffset: number) {
+    // 재고부족 확인
+    const product = productList.find((p) => p.id === cartItem.id)
+    if (!product || (quantityOffset > 0 && product.stock <= 0)) {
+      alert("재고가 부족합니다.")
+      return
+    }
+
+    changeCartItemQty(state, cartItem, quantityOffset)
+  }
+
+  function handleRemoveItemFromCart(cartItem: CartItem) {
+    removeItemFromCart(state, cartItem.id)
+  }
+
+  return (
+    <div className="bg-gray-100 p-8">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8">
+        <h1 id="title" className="text-2xl font-bold mb-4">
+          장바구니
+        </h1>
+
+        <div id="cart-items">
+          {cart.map((cartItem) => (
+            <div id="${cartItem.id}" className="flex justify-between items-center mb-2" key={cartItem.id}>
+              <span>
+                {cartItem.name} - {cartItem.price}원 x {cartItem.quantity}
+              </span>
+              <div>
+                <button
+                  className="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1"
+                  data-product-id="${cartItem.id}"
+                  data-change="-1"
+                  onClick={() => handleChangeQty(cartItem, -1)}
+                >
+                  -
+                </button>
+                <button
+                  className="quantity-change bg-blue-500 text-white px-2 py-1 rounded mr-1"
+                  data-product-id="${cartItem.id}"
+                  data-change="1"
+                  onClick={() => handleChangeQty(cartItem, +1)}
+                >
+                  +
+                </button>
+                <button
+                  className="remove-item bg-red-500 text-white px-2 py-1 rounded"
+                  data-product-id="${cartItem.id}"
+                  onClick={() => handleRemoveItemFromCart(cartItem)}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="cart-total" className="text-xl font-bold my-4">
+          총액: {displayTotalAmount}원
+          {discountRate > 0 && <span className="text-green-500 ml-2">({displayDiscRate}% 할인 적용)</span>}
+          <span id="loyalty-points" className="text-blue-500 ml-2">
+            (포인트: {bonusPoint})
+          </span>
+        </div>
+
+        <select id="product-select" className="border rounded p-2 mr-2">
+          {productList.map((item) => (
+            <option value={item.id} disabled={item.stock === 0} key={item.id}>
+              {item.name} - {item.price}원
+            </option>
+          ))}
+        </select>
+
+        <button id="add-to-cart" className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleAddProductToCart}>
+          추가
+        </button>
+
+        <div id="stock-status" className="text-sm text-gray-500 mt-2">
+          {productList.map((item) =>
+            item.stock < 5 ? `${item.name}: ${item.stock > 0 ? `재고 부족 (${item.stock}개 남음)` : "품절"}` : "",
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
-function handleChangeQty(event: MouseEvent) {
-  const target = event.target as HTMLDivElement
-  if (!target.classList.contains("quantity-change")) {
-    return
-  }
-
-  // 수량 변경
-  const productId = target.dataset.productId
-  const product = state.productList.find((p) => p.id === productId)
-  if (!product) {
-    return
-  }
-
-  const cartItem = state.cart.find((product) => product.id === productId)
-  if (!cartItem) {
-    return
-  }
-
-  const qtyChange = parseInt(target.dataset.change as string)
-  const newQty = cartItem.quantity + qtyChange
-
-  // 재고부족 확인
-  if (newQty > product.stock + cartItem.quantity) {
-    alert("재고가 부족합니다.")
-    return
-  }
-
-  changeCartItemQty(state, cartItem, qtyChange)
-}
-
-function handleRemoveItemFromCart(event: MouseEvent) {
-  const target = event.target as HTMLDivElement
-  if (!target.classList.contains("remove-item")) {
-    return
-  }
-
-  const productId = target.dataset.productId as string
-  removeItemFromCart(state, productId)
-}
-
-// 메인
-main(document.getElementById("app")!)
+const root = ReactDOM.createRoot(document.getElementById("app") as HTMLElement)
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
