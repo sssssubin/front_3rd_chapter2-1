@@ -173,7 +173,10 @@ function changeCartItemQty(state: AppState, cartItem: CartItem, qtyChange: numbe
 
 // 카트에서 물품 제거
 function removeItemFromCart(state: AppState, productId: ProductId) {
+  const cartItem = state.cart.find((item) => item.id === productId)
+  if (!cartItem) return
   setState({
+    productList: updateProductStock(state.productList, productId, +cartItem.quantity),
     cart: removeCartItem(state.cart, productId),
   })
 }
@@ -273,7 +276,6 @@ function useEffectSaleFlash() {
 // 추천세일
 function useEffectSaleRecommend() {
   setTimeout(() => {
-    // return
     setInterval(() => {
       if (lastSelectedProductIdRef) {
         const suggest = state.productList.find((item) => item.id !== lastSelectedProductIdRef && item.stock > 0)
