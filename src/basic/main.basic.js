@@ -22,7 +22,7 @@ const LIGHTNING_SALE_PROBABILITY = 0.3;
 const LIGHTNING_SALE_DISCOUNT = 0.8;
 
 // 상품 목록
-const PRODUCT_LIST = [
+let productList = [
   { id: 'p1', name: '상품1', price: 10000, quantity: 50 },
   { id: 'p2', name: '상품2', price: 20000, quantity: 30 },
   { id: 'p3', name: '상품3', price: 30000, quantity: 20 },
@@ -134,7 +134,7 @@ function setupCartStructure() {
  */
 function updateSelectOptions() {
   productDropdown.innerHTML = '';
-  PRODUCT_LIST.forEach(function (product) {
+  productList.forEach(function (product) {
     const option = createElement('option', {
       value: product.id,
       textContent: `${product.name} - ${product.price}원`,
@@ -159,7 +159,7 @@ function calculateCart(currentDate = new Date()) {
   let subTotal = 0;
 
   Array.from(cartItems).forEach((item) => {
-    const product = PRODUCT_LIST.find((product) => product.id === item.id);
+    const product = productList.find((product) => product.id === item.id);
     if (!product) {
       return;
     }
@@ -242,7 +242,7 @@ function updateCartTotalDisplay() {
  */
 function updateStockInfo() {
   let infoMsg = '';
-  PRODUCT_LIST.forEach(function (product) {
+  productList.forEach(function (product) {
     if (product.quantity < STOCK_WARNING_THRESHOLD) {
       infoMsg += `${product.name}: ${product.quantity > 0 ? `재고 부족 (${product.quantity}개 남음)` : '품절'}\n`;
     }
@@ -278,7 +278,7 @@ function renderBonusPoints() {
  * @param {string} productId - 선택된 상품의 ID
  */
 function addProductToCart(productId) {
-  const product = PRODUCT_LIST.find((product) => product.id === productId);
+  const product = productList.find((product) => product.id === productId);
   if (!product || product.quantity <= 0) {
     alert('선택한 상품의 재고가 없습니다.');
     return;
@@ -345,7 +345,7 @@ function handleCartChange(event) {
   if (target.classList.contains('quantity-change') || target.classList.contains('remove-item')) {
     const productId = target.dataset.productId;
     const item = document.getElementById(productId);
-    const product = PRODUCT_LIST.find((product) => product.id === productId);
+    const product = productList.find((product) => product.id === productId);
 
     if (!item || !product) {
       return;
@@ -427,7 +427,7 @@ function loadCartFromLocalStorage() {
 
     // 장바구니 아이템 복원
     cartState.items.forEach((item) => {
-      const product = PRODUCT_LIST.find((product) => product.id === item.productId);
+      const product = productList.find((product) => product.id === item.productId);
       if (product) {
         addNewCartItem(product, item.quantity);
         product.quantity -= item.quantity; // 재고 업데이트
@@ -464,7 +464,7 @@ function setupEventListeners() {
 function setupDiscountEvents() {
   setTimeout(function () {
     setInterval(function () {
-      const luckyItem = PRODUCT_LIST[Math.floor(Math.random() * PRODUCT_LIST.length)];
+      const luckyItem = productList[Math.floor(Math.random() * productList.length)];
       if (Math.random() < LIGHTNING_SALE_PROBABILITY && luckyItem.q > 0) {
         luckyItem.val = Math.round(luckyItem.val * LIGHTNING_SALE_DISCOUNT);
         alert('번개세일! ' + luckyItem.name + '이(가) 20% 할인 중입니다!');
@@ -476,7 +476,7 @@ function setupDiscountEvents() {
   setTimeout(function () {
     setInterval(function () {
       if (selectedProductId) {
-        const suggest = PRODUCT_LIST.find(function (product) {
+        const suggest = productList.find(function (product) {
           return product.id !== selectedProductId && product.quantity > 0;
         });
         if (suggest) {

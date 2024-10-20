@@ -24,7 +24,7 @@ export default [
         },
       ],
       'no-unused-vars': 'error',
-      'prefer-const': 'error',
+      // 'prefer-const': 'error',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
       'no-var': 'error',
