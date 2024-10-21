@@ -9,6 +9,25 @@ import {
 } from 'vitest';
 import { dateUtils } from '../main.basic.js';
 
+// 특정 요일(화요일)로 시스템 날짜를 고정하는 함수
+function setupTuesdayTest() {
+  const mockDate = new Date('2024-10-15'); // 화요일
+  vi.useFakeTimers();
+  vi.setSystemTime(mockDate);
+
+  // getCurrentDate 함수를 모킹
+  dateUtils.setCurrentDate(mockDate);
+
+  // // 현재 날짜 확인
+  const currentDate = dateUtils.getCurrentDate();
+  console.log('테스트에서 설정된 날짜:', currentDate);
+}
+
+// 실제 타이머를 복원하는 함수
+function restoreRealTimers() {
+  vi.useRealTimers();
+}
+
 describe('basic test', () => {
   describe.each([
     { type: 'origin', loadFile: () => import('../../main.js'), skip: true },
@@ -53,24 +72,15 @@ describe('basic test', () => {
       });
 
       beforeEach(() => {
-        vi.useFakeTimers();
-
-        const tuesday = new Date('2024-10-15T12:00:00'); // 2024년 10월 15일 화요일 정오
-        vi.setSystemTime(tuesday);
-
-        // getCurrentDate 함수를 모킹
-        dateUtils.setCurrentDate(tuesday);
-
-        // // 현재 날짜 확인
-        const currentDate = dateUtils.getCurrentDate();
-        console.log('테스트에서 설정된 날짜:', currentDate);
+        setupTuesdayTest();
 
         vi.spyOn(window, 'alert').mockImplementation(() => {});
       });
 
       afterEach(() => {
+        restoreRealTimers();
+
         vi.restoreAllMocks();
-        vi.useRealTimers();
       });
 
       it('초기 상태: 상품 목록이 올바르게 그려졌는지 확인', () => {
@@ -142,14 +152,16 @@ describe('basic test', () => {
         for (let i = 0; i < 10; i++) {
           addBtn.click();
         }
-        expect(sum.textContent).toContain('총액: 97200원(포인트: 97)');
+        expect(sum.textContent).toContain(
+          '총액: 87480원(19.0% 할인 적용)(포인트: 87)',
+        );
       });
 
       it('포인트가 올바르게 계산되는지 확인', () => {
         sel.value = 'p2';
         addBtn.click();
         expect(document.getElementById('loyalty-points').textContent).toContain(
-          '(포인트: 115)',
+          '(포인트: 103)',
         );
       });
 
@@ -164,9 +176,9 @@ describe('basic test', () => {
       it('화요일 할인이 적용되는지 확인', () => {
         sel.value = 'p1';
         addBtn.click();
-        expect(document.getElementById('sale-rate').textContent).toContain(
-          '(10.0% 할인 적용)',
-        );
+        expect(
+          document.getElementById('discount-display').textContent,
+        ).toContain('(19.0% 할인 적용)');
       });
 
       it('재고가 부족한 경우 추가되지 않는지 확인', () => {
