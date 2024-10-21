@@ -210,10 +210,11 @@ function calculateTotalItemCount(cartItems) {
  * @returns {number} 할인 후 총액
  */
 function applyBulkPurchaseDiscount(total, itemCount) {
-  if (itemCount >= CONFIG.BULK_DISCOUNT_THRESHOLD) {
-    return total * (1 - CONFIG.BULK_DISCOUNT_RATE);
+  if (itemCount < CONFIG.BULK_DISCOUNT_THRESHOLD) {
+    return total;
   }
-  return total;
+
+  return total * (1 - CONFIG.BULK_DISCOUNT_RATE);
 }
 
 /**
