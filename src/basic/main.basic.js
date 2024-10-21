@@ -36,7 +36,7 @@ const state = {
   loyaltyPoints: 0,
   totalAmount: 0,
   totalItemCount: 0,
-  currentDiscountRate: 0,
+  discountRate: 0,
 };
 
 const domElements = {
@@ -60,7 +60,7 @@ export function main() {
   initializeDOM();
   loadCartFromLocalStorage();
   updateSelectOptions();
-  calculateCart();
+  calculateCartTotal();
   setupDiscountEvents();
   displayCurrentDate();
   setupEventListeners();
@@ -164,83 +164,142 @@ function updateSelectOptions() {
 
 /**
  * 장바구니 총액 계산
- * @param {Date} [currentDate] - 현재 날짜 (옵션)
+ * @param {Array} cartItems - 장바구니 아이템 목록
+ * @returns {number} 총액
  */
-function calculateCart(currentDate = new Date()) {
-  if (!domElements.cartItemList) {
-    return;
+function calculateCartTotal(cartItems) {
+  if (!Array.isArray(cartItems) || cartItems.length === 0) {
+    return 0;
   }
 
-  state.totalAmount = 0;
-  state.totalItemCount = 0;
-  const cartItems = domElements.cartItemList.children;
-  let subTotal = 0;
-
-  Array.from(cartItems).forEach((item) => {
-    const product = productList.find((product) => product.id === item.id);
+  return cartItems.reduce((total, item) => {
+    const product = productList.find((p) => p.id === item.id);
     if (!product) {
-      return;
+      return total;
     }
 
-    const currentQuantity = parseInt(
+    const quantity = parseInt(
       item.querySelector('span').textContent.split('x ')[1],
     );
-    const productTotalPrice = product.price * currentQuantity;
-    state.totalItemCount += currentQuantity;
-    subTotal += productTotalPrice;
-
+    const productTotal = product.price * quantity;
     const discount =
-      currentQuantity >= 10 ? CONFIG.DISCOUNT_RATES[product.id] || 0 : 0;
-    state.totalAmount += productTotalPrice * (1 - discount);
-  });
+      quantity >= 10 ? CONFIG.DISCOUNT_RATES[product.id] || 0 : 0;
 
-  applyBulkPurchaseDiscount(subTotal);
-  applyTuesdayDiscount(currentDate);
-  updateCartTotalDisplay();
-  updateStockInfo();
-  updateLoyaltyPoints();
-  saveCartToLocalStorage();
+    return total + productTotal * (1 - discount);
+  }, 0);
+}
+
+/**
+ * 장바구니 아이템 수 계산
+ * @param {Array} cartItems - 장바구니 아이템 목록
+ * @returns {number} 총 아이템 수
+ */
+function calculateTotalItemCount(cartItems) {
+  return cartItems.reduce((count, item) => {
+    const quantity = parseInt(
+      item.querySelector('span').textContent.split('x ')[1],
+    );
+    return count + quantity;
+  }, 0);
 }
 
 /**
  * 대량 구매 할인 적용
- * @param {number} subTotal - 할인 전 소계
+ * @param {number} total - 할인 전 총액
+ * @param {number} itemCount - 총 아이템 수
+ * @returns {number} 할인 후 총액
  */
-function applyBulkPurchaseDiscount(subTotal) {
-  if (state.totalItemCount >= CONFIG.BULK_DISCOUNT_THRESHOLD) {
-    const bulkDisc = state.totalAmount * CONFIG.BULK_DISCOUNT_RATE;
-    const itemDisc = subTotal - state.totalAmount;
-    if (bulkDisc > itemDisc) {
-      state.totalAmount = subTotal * (1 - CONFIG.BULK_DISCOUNT_RATE);
-      state.currentDiscountRate = CONFIG.BULK_DISCOUNT_RATE;
-    } else {
-      state.currentDiscountRate = (subTotal - state.totalAmount) / subTotal;
-    }
-  } else {
-    state.currentDiscountRate = (subTotal - state.totalAmount) / subTotal;
+function applyBulkPurchaseDiscount(total, itemCount) {
+  if (itemCount >= CONFIG.BULK_DISCOUNT_THRESHOLD) {
+    return total * (1 - CONFIG.BULK_DISCOUNT_RATE);
   }
+  return total;
 }
 
 /**
  * 화요일 특별 할인 적용
+ * @param {number} total - 할인 전 총액
  * @param {Date} currentDate - 현재 날짜
+ * @returns {number} 할인 후 총액
  */
-function applyTuesdayDiscount(currentDate) {
+function applyTuesdayDiscount(total, currentDate) {
   if (currentDate.getDay() === 2) {
     // 2는 화요일
-    state.totalAmount *= 1 - CONFIG.TUESDAY_DISCOUNT_RATE;
-    updateDiscountRateDisplay(CONFIG.TUESDAY_DISCOUNT_RATE);
+    return total * (1 - CONFIG.TUESDAY_DISCOUNT_RATE);
   }
+  return total;
+}
+
+/**
+ * 장바구니 상태 계산
+ * @param {Array} cartItems - 장바구니 아이템 목록
+ * @param {Date} currentDate - 현재 날짜
+ * @returns {Object} 계산된 장바구니 상태
+ */
+function calculateCartState(cartItems, currentDate) {
+  const originalTotal = calculateCartTotal(cartItems);
+  const totalItemCount = calculateTotalItemCount(cartItems);
+  const bulkDiscountedTotal = applyBulkPurchaseDiscount(
+    originalTotal,
+    totalItemCount,
+  );
+  const finalTotal = applyTuesdayDiscount(bulkDiscountedTotal, currentDate);
+  const totalDiscount = (originalTotal - finalTotal) / originalTotal;
+
+  return {
+    totalAmount: finalTotal,
+    totalItemCount: totalItemCount,
+    discountRate: totalDiscount,
+  };
+}
+
+/**
+ * 장바구니 상태 업데이트
+ * @param {Object} newState - 새로운 장바구니 상태
+ */
+function updateCartState(newState) {
+  state.totalAmount = newState.totalAmount;
+  state.totalItemCount = newState.totalItemCount;
+  state.discountRate = newState.discountRate;
+}
+
+/**
+ * UI 업데이트
+ */
+function updateUI() {
+  updateCartTotalDisplay();
+  updateDiscountRateDisplay(state.discountRate);
+  updateStockInfo();
+  updateLoyaltyPoints();
+}
+
+/**
+ * 장바구니 상태 업데이트 및 UI 반영
+ * @param {Date} [currentDate=new Date()] - 현재 날짜 (옵션)
+ */
+function updateCart(currentDate = new Date()) {
+  if (!domElements.cartItemList) {
+    console.error('장바구니 요소를 찾을 수 없습니다.');
+    return;
+  }
+
+  const cartItems = Array.from(domElements.cartItemList.children);
+  const newState = calculateCartState(cartItems, currentDate);
+  updateCartState(newState);
+  updateUI();
+  saveCartToLocalStorage();
 }
 
 /**
  * 할인율 표시 업데이트
- * @param {number} rate  - 적용된 할인율
+ * @param {number} rate - 적용된 할인율
  */
 function updateDiscountRateDisplay(rate) {
-  domElements.discountDisplay.textContent = `(${(rate * 100).toFixed(
-    1,
-  )}% 할인 적용)`;
+  if (rate > 0) {
+    domElements.discountDisplay.textContent = `(${(rate * 100).toFixed(
+      1,
+    )}% 할인 적용)`;
+  }
 }
 
 /**
@@ -250,17 +309,6 @@ function updateCartTotalDisplay() {
   domElements.cartTotalDisplay.textContent = `총액: ${Math.round(
     state.totalAmount,
   )}원`;
-
-  if (state.currentDiscountRate > 0) {
-    const span = createElement('span', {
-      className: 'text-green-500 ml-2',
-      textContent: `(${(state.currentDiscountRate * 100).toFixed(
-        1,
-      )}% 할인 적용)`,
-    });
-    domElements.cartTotalDisplay.appendChild(span);
-  }
-
   renderBonusPoints();
 }
 
@@ -320,7 +368,7 @@ function addProductToCart(productId) {
     addNewCartItem(product);
   }
 
-  calculateCart();
+  updateCart();
   state.selectedProductId = productId;
   saveCartToLocalStorage();
 }
@@ -332,10 +380,10 @@ function addProductToCart(productId) {
  */
 function updateExistingCartItem(item, product) {
   const quantitySpan = item.querySelector('span');
-  const currentQuantity = parseInt(quantitySpan.textContent.split('x ')[1]);
-  const newQuantity = currentQuantity + 1;
+  const quantity = parseInt(quantitySpan.textContent.split('x ')[1]);
+  const newQuantity = quantity + 1;
 
-  if (newQuantity <= product.quantity + currentQuantity) {
+  if (newQuantity <= product.quantity + quantity) {
     quantitySpan.textContent = `${product.name} - ${product.price}원 x ${newQuantity}`;
     product.quantity--;
   } else {
@@ -389,7 +437,7 @@ function handleCartChange(event) {
       handleRemoveCartItem(item, product);
     }
 
-    calculateCart();
+    updateCart();
     saveCartToLocalStorage();
   }
 }
@@ -403,8 +451,8 @@ function handleCartChange(event) {
 function handleChangeItemQuantity(target, item, product) {
   const change = parseInt(target.dataset.change);
   const quantitySpan = item.querySelector('span');
-  const currentQuantity = parseInt(quantitySpan.textContent.split('x ')[1]);
-  const newQuantity = currentQuantity + change;
+  const quantity = parseInt(quantitySpan.textContent.split('x ')[1]);
+  const newQuantity = quantity + change;
 
   if (newQuantity > 0 && (change < 0 || product.quantity > 0)) {
     quantitySpan.textContent = `${product.name} - ${product.price}원 x ${newQuantity}`;
@@ -543,22 +591,22 @@ function setupDiscountEvents() {
 function displayCurrentDate() {
   let dateDisplay;
   if (!dateDisplay) {
-    dateDisplay = createElement('div', { id: 'current-date' });
+    dateDisplay = createElement('div', { id: 'date' });
     document.body.prepend(dateDisplay);
   }
 }
 
 // 날짜 유틸리티 객체
 export const dateUtils = {
-  _currentDate: new Date(),
+  _date: new Date(),
   getCurrentDate: function () {
-    return new Date(this._currentDate);
+    return new Date(this._date);
   },
-  setCurrentDate: function (currentDate) {
-    this._currentDate = new Date(currentDate);
+  setCurrentDate: function (date) {
+    this._date = new Date(date);
     this.updateDisplay();
     if (domElements.cartItemList && domElements.cartTotalDisplay) {
-      calculateCart(currentDate);
+      updateCart(date);
     } else {
       console.error('DOM 요소가 초기화되지 않았습니다.');
     }
