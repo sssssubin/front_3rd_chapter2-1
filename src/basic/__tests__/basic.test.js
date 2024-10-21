@@ -9,6 +9,18 @@ import {
 } from 'vitest';
 import { dateUtils } from '../main.basic.js';
 
+// 특정 요일(화요일)로 시스템 날짜를 고정하는 함수
+function setupTuesdayTest() {
+  const mockDate = new Date('2024-10-15'); // 화요일
+  vi.useFakeTimers();
+  vi.setSystemTime(mockDate);
+}
+
+// 실제 타이머를 복원하는 함수
+function restoreRealTimers() {
+  vi.useRealTimers();
+}
+
 describe('basic test', () => {
   describe.each([
     { type: 'origin', loadFile: () => import('../../main.js'), skip: true },
@@ -53,24 +65,15 @@ describe('basic test', () => {
       });
 
       beforeEach(() => {
-        vi.useFakeTimers();
-
-        const tuesday = new Date('2024-10-15T12:00:00'); // 2024년 10월 15일 화요일 정오
-        vi.setSystemTime(tuesday);
-
-        // getCurrentDate 함수를 모킹
-        dateUtils.setCurrentDate(tuesday);
-
-        // // 현재 날짜 확인
-        const currentDate = dateUtils.getCurrentDate();
-        console.log('테스트에서 설정된 날짜:', currentDate);
+        setupTuesdayTest();
 
         vi.spyOn(window, 'alert').mockImplementation(() => {});
       });
 
       afterEach(() => {
+        restoreRealTimers();
+
         vi.restoreAllMocks();
-        vi.useRealTimers();
       });
 
       it('초기 상태: 상품 목록이 올바르게 그려졌는지 확인', () => {
